@@ -20,6 +20,16 @@ $ npm start
 | utils/translate.js | Dịch tiếng Anh sang tiếng Việt |
 | utils/pdf.js | Chuyển đổi text sang PDF |
 
-## Yêu cầu
- - Hoàn thiện chương trình sử dụng `express.js` cho phép upload một file ảnh và trả về một file `pdf` tương ứng
- - Sử dụng `Pipes and Filters pattern` và `message queue` để hoàn thiện chương trình trên.
+
+## Yêu cầu triển khai
+| Mức độ | Mô tả |
+|--|--|
+| ![Static Badge](https://img.shields.io/badge/OPTIONAL-easy-green) | Triển khai thành web hoàn chỉnh |
+| ![Static Badge](https://img.shields.io/badge/OPTIONAL-hard-red) | Sử dụng cache để tăng hiệu suất ứng dụng |
+| ![Static Badge](https://img.shields.io/badge/REQUIRED-warning-orange)  | Không thay đổi thư viện của từng chức năng |
+| ![Static Badge](https://img.shields.io/badge/REQUIRED-easy-green)  | Hoàn thiện chương trình sử dụng `express.js` cho phép upload một file ảnh và tải về một file `pdf` tương ứng |
+| ![Static Badge](https://img.shields.io/badge/REQUIRED-medium-yellow) | Sử dụng `message queue` cho chương trình trên (ví dụ: Kafka, RabbitMQ,...) |
+| ![Static Badge](https://img.shields.io/badge/REQUIRED-medium-yellow) | *Đánh giá* và *so sánh* hiệu năng dựa trên kiến trúc đã triển khai |
+| ![Static Badge](https://img.shields.io/badge/REQUIRED-medium-yellow) | Lựa chọn số lượng filter tối ưu nhất với hạ tầng phần cứng |
+
+Ngoài ra, các bạn có thể tuỳ chọn bổ sung thêm một số phần triển khai khác.
