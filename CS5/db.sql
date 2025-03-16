@@ -1,16 +1,15 @@
-CREATE TABLE IF NOT EXISTS `article` (
-	`id` integer primary key NOT NULL UNIQUE,
-	`title` TEXT NOT NULL,
-	`year` INTEGER NOT NULL
+CREATE TABLE IF NOT EXISTS `release` (
+	`name` text NOT NULL,
+	`content` text NOT NULL,
+	`repoID` int NOT NULL
 );
-CREATE TABLE IF NOT EXISTS `author` (
-	`id` integer primary key NOT NULL UNIQUE,
-	`name` TEXT NOT NULL,
-	`email` TEXT
+
+CREATE TABLE IF NOT EXISTS `repo` (
+	`id` int AUTO_INCREMENT NOT NULL UNIQUE,
+	`user` text NOT NULL,
+	`name` text NOT NULL,
+	PRIMARY KEY (`id`)
 );
-CREATE TABLE IF NOT EXISTS `article_author` (
-	`article_id` INTEGER NOT NULL,
-	`author_id` INTEGER NOT NULL,
-FOREIGN KEY(`article_id`) REFERENCES `article`(`id`),
-FOREIGN KEY(`author_id`) REFERENCES `author`(`id`)
-);
+
+
+ALTER TABLE `repo` ADD CONSTRAINT `repo_fk0` FOREIGN KEY (`id`) REFERENCES `release`(`repoID`);

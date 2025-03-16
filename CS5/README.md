@@ -1,12 +1,16 @@
 # CASE STUDY 5
 
-International Conference on Software Engineering ([ICSE](https://www.icse-conferences.org/)) là một hội nghị uy tín trong ngành Công nghệ phần mềm. Nhiệm vụ trong bài này là dựng một crawler có thể lấy thông tin tất cả bài báo theo dữ liệu yêu cầu như database (db.sql) tương ứng.  
+[Gitstar ranking](https://gitstar-ranking.com/repositories) là một trang web thú vị để thống kê các trang được đánh giá sao nhiều nhất trên Github. Nhiệm vụ trong bài này là dựng một crawler có thể thu thập được thông tin các bản release của 5000 repository nhiều sao nhất Github.
 
 ## Gợi ý triển khai
 
-Ngoài cách crawl trên trang chủ, có thể sử dụng [trang web này](https://ieeexplore.ieee.org/xpl/conhome/1000691/all-proceedings) để thu thập dữ liệu cần sử dụng. Các bạn có thể dùng các công cụ như [scrapy](https://scrapy.org/) (Python), [cheerio](https://github.com/cheeriojs/cheerio) (NodeJS), [Selenium](https://www.selenium.dev/), v.v.
+Ngoài cách crawl trên trang chủ, có thể sử dụng [API này](https://docs.github.com/en/rest) để thu thập dữ liệu cần sử dụng. Các bạn có thể dùng các công cụ như [scrapy](https://scrapy.org/) (Python), [cheerio](https://github.com/cheeriojs/cheerio) (NodeJS), [Selenium](https://www.selenium.dev/), v.v.
 
-Các trang web trên có thể chặn lưu lượng truy cập bất thường, với vấn đề này có thể sử dụng proxy, VPN hoặc Tor, v.v.
+Các trang web trên có thể chặn lưu lượng truy cập bất thường dù dùng thông qua API chính chủ, với vấn đề này có thể sử dụng proxy, VPN hoặc Tor, v.v.
+
+## Dữ liệu
+
+Các thông tin cần thu thập bao gồm tên bản release, nội dung release và các commit thay đổi trong bản release đó. Schema của cơ sở dữ liệu mẫu nằm trong file `db.sql`.
 
 ## Yêu cầu triển khai
 
