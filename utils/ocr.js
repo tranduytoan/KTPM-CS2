@@ -9,4 +9,3 @@ async function image2text(path){
 module.exports = {
   image2text
 }
-
