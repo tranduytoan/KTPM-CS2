@@ -9,7 +9,7 @@ const handleMessage = async ({ value, key }) => {
         const { translatedText } = JSON.parse(value); // Gi ả sử message là JSON chứa translatedText
         const pdfPath = await createPDF(translatedText, key); // Tạo PDF từ text đã dịch
         // console.log('PDF created at:', pdfPath);
-        resultEmitter.emit('pdfCreated', { pdfPath, key }); // Phát sự kiện khi PDF đã được tạo
+        resultEmitter.emit(`pdfCreated-${key}`, { pdfPath, key }); // Phát sự kiện khi PDF đã được tạo
 
     } catch (error) {
         console.error('Error processing message:', error);

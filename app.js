@@ -68,11 +68,11 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     const TIMEOUT = 15000; // 15 giây
 
     const timeout = setTimeout(() => {
-      resultEmitter.removeAllListeners('pdfCreated'); // tránh leak memory
+      resultEmitter.removeAllListeners(`pdfCreated-${correlationId}`); // tránh leak memory
       res.status(504).json({ error: 'Xử lý ảnh mất quá nhiều thời gian' });
     }, TIMEOUT);
 
-    resultEmitter.once('pdfCreated', ({ pdfPath, key }) => {
+    resultEmitter.once(`pdfCreated-${correlationId}`, ({ pdfPath, key }) => {
       if (key === correlationId) {
         clearTimeout(timeout);
         res.download(pdfPath, 'translated_document.pdf', (err) => {
