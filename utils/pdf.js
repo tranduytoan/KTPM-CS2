@@ -1,23 +1,30 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const { rejects } = require('assert');
 
-const OUT_FILE = "./output/output.pdf";
+const OUTPUT_DIR = path.resolve(__dirname, '../output/');
 
-function createPDF(text) {
+function createPDF(text, key) {
     // Check if the output directory exists, if not, create it
-    const outputDir = path.dirname(OUT_FILE);
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-    }
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(OUTPUT_DIR)) {
+            fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+        }
     
-    const doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(OUT_FILE));
-    doc.font(path.resolve(__dirname, '../font/Roboto-Regular.ttf'))
-        .fontSize(14)
-        .text(text, 100, 100);
-    doc.end();
-    return OUT_FILE;
+        const outputFile = path.join(OUTPUT_DIR, `output_${key}.pdf`);
+        
+        const doc = new PDFDocument();
+        const stream = fs.createWriteStream(outputFile);
+        doc.pipe(stream);
+        doc.font(path.resolve(__dirname, '../font/Roboto-Regular.ttf'))
+            .fontSize(14)
+            .text(text, 100, 100);
+        doc.end();
+        
+        stream.on('finish', () => resolve(outputFile)); // Resolve the promise with the output file path)
+        stream.on('error', reject);
+    })
 }
 
 module.exports = {
