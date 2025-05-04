@@ -9,7 +9,15 @@ const { v4: uuidv4 } = require('uuid');
 const { ocrConsumer } = require('./kafka/consumer/consumerOcr');
 const { pdfConsumer } = require('./kafka/consumer/consumerPdf');
 const { translateConsumer } = require('./kafka/consumer/consumerTranslate');
+const config = require('./config');
 
+// Initialize all consumers based on configuration
+console.log('Starting pipe and filter system with configuration:');
+console.log(`OCR filter: ${config.parallelism.ocr} consumers (fixed 8 partitions)`);
+console.log(`Translate filter: ${config.parallelism.translate} consumers (fixed 4 partitions)`);
+console.log(`PDF filter: ${config.parallelism.pdf} consumers (fixed 2 partitions)`);
+
+// Start consumers
 ocrConsumer();
 translateConsumer();
 pdfConsumer();
@@ -53,19 +61,27 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Admin endpoint to view filter configuration
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// API endpoint to get filter configuration
+app.get('/api/config', (req, res) => {
+  res.json(config.parallelism);
+});
+
 // API endpoint để xử lý upload file
 app.post('/upload', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Vui lòng upload một file hình ảnh' });
-    }
-
-    const imagePath = req.file.path;
+    }    const imagePath = req.file.path;
     const correlationId = uuidv4();
-    // gủi đi 1 topic Kafka
-    await produceMessage('ocr-topic', imagePath, correlationId);
+    // Send to first filter (OCR) via Kafka
+    await produceMessage(config.topics.ocr, imagePath, correlationId);
 
-    const TIMEOUT = 15000; // 15 giây
+    const TIMEOUT = 15000; // 15 seconds
 
     const timeout = setTimeout(() => {
       resultEmitter.removeAllListeners(`pdfCreated-${correlationId}`); // tránh leak memory
