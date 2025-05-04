@@ -10,6 +10,9 @@ const { ocrConsumer } = require('./kafka/consumer/consumerOcr');
 const { pdfConsumer } = require('./kafka/consumer/consumerPdf');
 const { translateConsumer } = require('./kafka/consumer/consumerTranslate');
 const config = require('./config');
+const cacheService = require('./services/cacheService');
+const { getImageBufferFromPath } = require('./utils/imageUtils');
+const logger = require('./utils/logger');
 
 // Initialize all consumers based on configuration
 console.log('Starting pipe and filter system with configuration:');
@@ -23,7 +26,7 @@ translateConsumer();
 pdfConsumer();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 // Middleware
 app.use(cors());
@@ -78,10 +81,49 @@ app.post('/upload', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Vui lòng upload một file hình ảnh' });
-    }    const imagePath = req.file.path;
+    }
+    
+    const imagePath = req.file.path;
     const correlationId = uuidv4();
-    // Send to first filter (OCR) via Kafka
-    await produceMessage(config.topics.ocr, imagePath, correlationId);
+    
+    // Get image buffer for caching
+    const imageBuffer = await getImageBufferFromPath(imagePath);
+    
+    // Check if PDF already exists in cache
+    const cachedPdfPath = await cacheService.getCachedResult(imageBuffer, 'pdf');
+    
+    if (cachedPdfPath && fs.existsSync(cachedPdfPath)) {
+      logger.info('Using cached PDF result');
+      // If PDF is in cache, send directly without Kafka processing
+      return res.download(cachedPdfPath, 'translated_document.pdf', (err) => {
+        if (err) {
+          logger.error('Lỗi khi tải file PDF từ cache:', err);
+          res.status(500).send('Lỗi khi tải file PDF');
+        }
+        // Keep the cached PDF but remove the uploaded image
+        fs.unlink(imagePath, (err) => {
+          if (err) logger.error('Không thể xóa file ảnh tạm:', err);
+        });
+      });
+    }
+    
+    // Check if we have OCR text and translated text in cache
+    const cachedText = await cacheService.getCachedResult(imageBuffer, 'text');
+    const cachedTranslatedText = await cacheService.getCachedResult(imageBuffer, 'translatedText');
+    
+    if (cachedText && cachedTranslatedText) {
+      logger.info('Using cached OCR and translation results');
+      // Skip OCR and translation, send directly to PDF generation
+      await produceMessage(config.topics.pdf, JSON.stringify({ 
+        text: cachedText, 
+        translatedText: cachedTranslatedText, 
+        imagePath 
+      }), correlationId);
+    } else {
+      // If not in cache, start from the beginning
+      logger.info('No complete cache found, sending to OCR processing');
+      await produceMessage(config.topics.ocr, imagePath, correlationId);
+    }
 
     const TIMEOUT = 15000; // 15 seconds
 
@@ -95,28 +137,26 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         clearTimeout(timeout);
         res.download(pdfPath, 'translated_document.pdf', (err) => {
           if (err) {
-            console.error('Lỗi khi tải file PDF:', err);
+            logger.error('Lỗi khi tải file PDF:', err);
             res.status(500).send('Lỗi khi tải file PDF');
           }
 
           // Xóa file ảnh sau khi xử lý xong
           fs.unlink(imagePath, (err) => {
-            if (err) console.error('Không thể xóa file ảnh tạm:', err);
+            if (err) logger.error('Không thể xóa file ảnh tạm:', err);
           });
 
-          // Xóa file PDF sau khi đã download xong
-          fs.unlink(pdfPath, (err) => {
-            if (err) console.error('Không thể xóa file PDF tạm:', err);
-          });
+          // Don't delete the PDF if we just cached it
+          // The cleanup can be handled by a separate process or TTL
         });
       }
     });
   } catch (error) {
-    console.error('Lỗi xử lý:', error);
+    logger.error('Lỗi xử lý:', error);
     res.status(500).json({ error: 'Lỗi khi xử lý file ảnh' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Server đang chạy tại http://localhost:${PORT}`);
+  logger.info(`Server đang chạy tại http://localhost:${PORT}`);
 });
