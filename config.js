@@ -39,8 +39,7 @@ module.exports = {
     keyPrefix: {
       imageHash: 'img:',
       pdfPath: 'pdf:',
-      textResult: 'txt:',
-      translatedText: 'trans:'  // New prefix for translated text
+      translatedText: 'trans:'
     }
   }
 };

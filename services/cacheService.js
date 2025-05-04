@@ -51,7 +51,7 @@ const generateImageHash = (imageBuffer) => {
  * Cache the result associated with an image
  * @param {Buffer} imageBuffer - Original image buffer
  * @param {string} result - Result to cache (PDF path or extracted text)
- * @param {string} type - Type of result ('pdf', 'text', or 'translatedText')
+ * @param {string} type - Type of result ('pdf' or 'translatedText')
  * @returns {Promise<boolean>} - Success status
  */
 const cacheResult = async (imageBuffer, result, type = 'pdf') => {
@@ -61,8 +61,6 @@ const cacheResult = async (imageBuffer, result, type = 'pdf') => {
     
     if (type === 'pdf') {
       prefix = config.redis.keyPrefix.pdfPath;
-    } else if (type === 'text') {
-      prefix = config.redis.keyPrefix.textResult;
     } else if (type === 'translatedText') {
       prefix = config.redis.keyPrefix.translatedText;
     } else {
@@ -84,7 +82,7 @@ const cacheResult = async (imageBuffer, result, type = 'pdf') => {
 /**
  * Get cached result for an image
  * @param {Buffer} imageBuffer - Image buffer to look up
- * @param {string} type - Type of result to retrieve ('pdf', 'text', or 'translatedText')
+ * @param {string} type - Type of result to retrieve ('pdf' or 'translatedText')
  * @returns {Promise<string|null>} - Cached result or null if not found
  */
 const getCachedResult = async (imageBuffer, type = 'pdf') => {
@@ -94,8 +92,6 @@ const getCachedResult = async (imageBuffer, type = 'pdf') => {
     
     if (type === 'pdf') {
       prefix = config.redis.keyPrefix.pdfPath;
-    } else if (type === 'text') {
-      prefix = config.redis.keyPrefix.textResult;
     } else if (type === 'translatedText') {
       prefix = config.redis.keyPrefix.translatedText;
     } else {
@@ -121,13 +117,13 @@ const getCachedResult = async (imageBuffer, type = 'pdf') => {
 /**
  * Check if a result exists in cache
  * @param {Buffer} imageBuffer - Image buffer to check
- * @param {string} type - Type of result to check ('pdf' or 'text')
+ * @param {string} type - Type of result to check ('pdf' or 'translatedText')
  * @returns {Promise<boolean>} - True if exists in cache
  */
 const existsInCache = async (imageBuffer, type = 'pdf') => {
   try {
     const imageHash = generateImageHash(imageBuffer);
-    const prefix = type === 'pdf' ? config.redis.keyPrefix.pdfPath : config.redis.keyPrefix.textResult;
+    const prefix = type === 'pdf' ? config.redis.keyPrefix.pdfPath : config.redis.keyPrefix.translatedText;
     const key = `${prefix}${imageHash}`;
     
     const exists = await existsAsync(key);
@@ -141,13 +137,13 @@ const existsInCache = async (imageBuffer, type = 'pdf') => {
 /**
  * Remove an item from cache
  * @param {Buffer} imageBuffer - Image buffer to remove
- * @param {string} type - Type of result to remove ('pdf' or 'text')
+ * @param {string} type - Type of result to remove ('pdf' or 'translatedText')
  * @returns {Promise<boolean>} - Success status
  */
 const removeFromCache = async (imageBuffer, type = 'pdf') => {
   try {
     const imageHash = generateImageHash(imageBuffer);
-    const prefix = type === 'pdf' ? config.redis.keyPrefix.pdfPath : config.redis.keyPrefix.textResult;
+    const prefix = type === 'pdf' ? config.redis.keyPrefix.pdfPath : config.redis.keyPrefix.translatedText;
     const key = `${prefix}${imageHash}`;
     
     await delAsync(key);

@@ -22,12 +22,8 @@ const handleMessage = async (message) => {
         await cacheService.cacheResult(imageBuffer, translatedText, 'translatedText');
         
         // Chuyển kết quả dịch đến bộ tạo PDF
-        await produceMessage(config.topics.pdf, JSON.stringify({ 
-            text, 
-            translatedText, 
-            imagePath 
-        }), message.key);
-        
+        await produceMessage(config.topics.pdf, JSON.stringify({translatedText, imagePath}), message.key);
+
         const endTime = Date.now();
         const processingTime = endTime - startTime;
         logger.info(`Translation completed for message: ${message.key} - Processing time: ${processingTime}ms`);

@@ -105,19 +105,19 @@ app.post('/upload', upload.single('image'), async (req, res) => {
           if (err) logger.error('Không thể xóa file ảnh tạm:', err);
         });
       });
+    } else if (cachedPdfPath && !fs.existsSync(cachedPdfPath)) {
+      logger.info('Cached PDF path exists but file not found, reprocessing...');
+      await cacheService.removeFromCache(imageBuffer, 'pdf');
     }
     
-    // Check if we have OCR text and translated text in cache
-    const cachedText = await cacheService.getCachedResult(imageBuffer, 'text');
+    // Check if we have OCR translated text in cache
     const cachedTranslatedText = await cacheService.getCachedResult(imageBuffer, 'translatedText');
-    
-    if (cachedText && cachedTranslatedText) {
+
+    if (cachedTranslatedText) {
       logger.info('Using cached OCR and translation results');
-      // Skip OCR and translation, send directly to PDF generation
-      await produceMessage(config.topics.pdf, JSON.stringify({ 
-        text: cachedText, 
-        translatedText: cachedTranslatedText, 
-        imagePath 
+      await produceMessage(config.topics.pdf, JSON.stringify({
+        translatedText: cachedTranslatedText,
+        imagePath: imagePath
       }), correlationId);
     } else {
       // If not in cache, start from the beginning
