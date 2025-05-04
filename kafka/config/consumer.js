@@ -1,6 +1,7 @@
 const kafka = require('./kafkaClient');
 const config = require('../../config');
 const pLimit = require('p-limit');
+const e = require('express');
 
 const runConsumer = async (topic, groupId, handleMessage) => {
   // Get the parallelism configuration based on the topic name
@@ -16,6 +17,7 @@ const runConsumer = async (topic, groupId, handleMessage) => {
   
   // Tạo hàm giới hạn đồng thời đúng cách
   const limit = pLimit(concurrencyLimit);
+  const maxLimitPendingCount = concurrencyLimit * 5;
   
   const consumer = kafka.consumer({ groupId });
   await consumer.connect();
@@ -28,9 +30,16 @@ const runConsumer = async (topic, groupId, handleMessage) => {
       const messageValue = message.value.toString();
       const messageId = message.key ? message.key.toString() : null;
 
-      // Process message with concurrency limit
-      limit(() => handleMessage({ value: messageValue, key: messageId }))
+      if (topic !== config.topics.ocr) {
+        limit(() => handleMessage({ value: messageValue, key: messageId }))
         .catch(err => console.error(`Error processing message from ${topic}:`, err));
+      } else { // first topic
+        while (limit.pendingCount >= maxLimitPendingCount) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        limit(() => handleMessage({ value: messageValue, key: messageId }))
+        .catch(err => console.error(`Error processing message from ${topic}:`, err));
+      }
     },
   });
 };
