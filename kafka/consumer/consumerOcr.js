@@ -6,11 +6,16 @@ const config = require('../../config');
 
 const handleMessage = async ({value, key}) => {
     try {
+        const startTime = Date.now();
         console.log(`OCR processing started for message: ${key}`);
+        
         const imagePath = value.toString(); // Đường dẫn đến file hình ảnh
         const text = await image2text(imagePath); // Chuyển ảnh sang text
         await produceMessage(config.topics.translate, JSON.stringify({ text, imagePath }), key); // Gửi text sang topic translate-topic
-        console.log(`OCR completed for message: ${key}`);
+        
+        const endTime = Date.now();
+        const processingTime = endTime - startTime;
+        console.log(`OCR completed for message: ${key} - Processing time: ${processingTime}ms`);
     } catch (error) {
         console.error('Error processing OCR message:', error);
     }
