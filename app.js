@@ -41,7 +41,9 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+    const uid = uuidv4();
+    const fileExt = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${uid}${fileExt}`);
   }
 });
 
@@ -100,6 +102,11 @@ app.post('/upload', upload.single('image'), async (req, res) => {
           // Xóa file ảnh sau khi xử lý xong
           fs.unlink(imagePath, (err) => {
             if (err) console.error('Không thể xóa file ảnh tạm:', err);
+          });
+
+          // Xóa file PDF sau khi đã download xong
+          fs.unlink(pdfPath, (err) => {
+            if (err) console.error('Không thể xóa file PDF tạm:', err);
           });
         });
       }

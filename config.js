@@ -1,12 +1,18 @@
 // Configuration for Pipe and Filter Pattern
 module.exports = {
   // Number of parallel instances for each filter
-  parallelism: {
-    ocr: 4,         // Number of parallel OCR processors
-    translate: 2,    // Number of parallel translate processors
-    pdf: 1          // Number of parallel PDF generators
-  },
+  // parallelism: {
+  //   ocr: 4,         // Number of parallel OCR processors
+  //   translate: 2,    // Number of parallel translate processors
+  //   pdf: 1          // Number of parallel PDF generators
+  // },
   
+  parallelism: {
+    ocr: 8,         // Number of parallel OCR processors
+    translate: 4,    // Number of parallel translate processors
+    pdf: 2          // Number of parallel PDF generators
+  },
+
   // Kafka topics configuration
   topics: {
     ocr: 'ocr-topic',
