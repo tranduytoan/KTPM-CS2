@@ -1,9 +1,11 @@
+const kafka = require("./kafka/kafkaClient");
+
 // Configuration for Pipe and Filter Pattern
 module.exports = {
   parallelism: {
-    ocr: 8,         // Number of parallel OCR processors
-    translate: 4,    // Number of parallel translate processors
-    pdf: 2          // Number of parallel PDF generators
+    ocr: 4,         // Number of parallel OCR processors
+    translate: 2,    // Number of parallel translate processors
+    pdf: 1          // Number of parallel PDF generators
   },
 
   // Kafka topics configuration
@@ -35,7 +37,7 @@ module.exports = {
       translatedText: 'trans:'
     }
   },
-  
+
   kafka: {
     clientId: 'pipe-filter-app',
     brokers: ['localhost:9092'],

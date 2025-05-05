@@ -6,7 +6,6 @@ const fs = require('fs');
 const produceMessage = require('./kafka/config/producer');
 const { resultEmitter } = require('./kafka/config/resultEmitter')
 const { v4: uuidv4 } = require('uuid');
-const { ocrConsumer } = require('./kafka/consumer/consumerOcr');
 const { pdfConsumer } = require('./kafka/consumer/consumerPdf');
 const { translateConsumer } = require('./kafka/consumer/consumerTranslate');
 const config = require('./config');
@@ -14,14 +13,7 @@ const cacheService = require('./services/cacheService');
 const { getImageBufferFromPath } = require('./utils/imageUtils');
 const logger = require('./utils/logger');
 
-// Initialize all consumers based on configuration
-console.log('Starting pipe and filter system with configuration:');
-console.log(`OCR filter: ${config.parallelism.ocr} consumers (fixed 8 partitions)`);
-console.log(`Translate filter: ${config.parallelism.translate} consumers (fixed 4 partitions)`);
-console.log(`PDF filter: ${config.parallelism.pdf} consumers (fixed 2 partitions)`);
-
 // Start consumers
-ocrConsumer();
 translateConsumer();
 pdfConsumer();
 
@@ -66,16 +58,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Admin endpoint to view filter configuration
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
-// API endpoint to get filter configuration
-app.get('/api/config', (req, res) => {
-  res.json(config.parallelism);
-});
-
 // API endpoint để xử lý upload file
 app.post('/upload', upload.single('image'), async (req, res) => {
   try {
@@ -84,10 +66,9 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
     
     const imagePath = req.file.path;
-    const correlationId = uuidv4();
-    
-    // Get image buffer for caching
     const imageBuffer = await getImageBufferFromPath(imagePath);
+    const imageBase64 = imageBuffer.toString('base64');
+    const correlationId = uuidv4();
     
     // Check if PDF already exists in cache
     const cachedPdfPath = await cacheService.getCachedResult(imageBuffer, 'pdf');
@@ -122,7 +103,17 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     } else {
       // If not in cache, start from the beginning
       logger.info('No complete cache found, sending to OCR processing');
-      await produceMessage(config.topics.ocr, imagePath, correlationId);
+      // await produceMessage(config.topics.ocr, imagePath, correlationId);
+      await produceMessage(
+        config.topics.ocr, 
+        JSON.stringify({
+          imageContent: imageBase64,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          imageOriginPath: imagePath
+        }), 
+        correlationId
+      );
     }
 
     const TIMEOUT = 15000; // 15 seconds

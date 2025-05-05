@@ -1,0 +1,21 @@
+{
+  "name": "ocr-service",
+  "version": "1.0.0",
+  "description": "OCR service for image to text conversion",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "node-tesseract-ocr": "^2.2.1",
+    "p-limit": "^3.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

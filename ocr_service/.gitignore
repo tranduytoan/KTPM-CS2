@@ -1,0 +1,6 @@
+node_modules
+app.db
+output.pdf
+.DS_Store
+/uploads
+/output/*
