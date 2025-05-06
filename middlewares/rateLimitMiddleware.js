@@ -12,7 +12,7 @@ const { metrics } = require('../utils/metrics');
 const rateLimitMiddleware = (options = {}) => {
   const {
     limit = 5,
-    windowSec = 60,
+    windowSec = 10,
     getIdentifier = (req) => req.ip || req.headers['x-forwarded-for'] || 'unknown'
   } = options;
 
