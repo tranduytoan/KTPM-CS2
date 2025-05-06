@@ -21,15 +21,15 @@ const rateLimitMiddleware = (options = {}) => {
     
     const rateLimitInfo = await checkRateLimit(identifier, limit, windowSec);
     
+    // Update the sliding window metric
+    metrics.slidingWindowRateLimit.set({ identifier }, rateLimitInfo.current);
+    
     // Set rate limit headers
     res.setHeader('X-RateLimit-Limit', limit);
     res.setHeader('X-RateLimit-Remaining', rateLimitInfo.remaining);
     res.setHeader('X-RateLimit-Reset', rateLimitInfo.reset);
     
     if (rateLimitInfo.isRateLimited) {
-      // Increment rate limit metric
-      metrics.rateLimit.inc({ identifier });
-      
       // Send rate limit response
       return res.status(429).json({
         error: 'Too many requests',

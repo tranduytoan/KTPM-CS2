@@ -2,6 +2,7 @@ const redis = require('redis');
 const { promisify } = require('util');
 const logger = require('../utils/logger');
 const config = require('../config');
+const { metrics } = require('../utils/metrics');
 
 // Create Redis client with configuration (reuse existing Redis connection)
 const client = redis.createClient({
@@ -24,12 +25,15 @@ const client = redis.createClient({
 });
 
 // Promisify Redis commands
-const incrAsync = promisify(client.incr).bind(client);
+const zaddAsync = promisify(client.zadd).bind(client);
+const zrangebyscoreAsync = promisify(client.zrangebyscore).bind(client);
+const zremrangebyscoreAsync = promisify(client.zremrangebyscore).bind(client);
+const zremrangebyrankAsync = promisify(client.zremrangebyrank).bind(client);
 const expireAsync = promisify(client.expire).bind(client);
 const ttlAsync = promisify(client.ttl).bind(client);
 
 /**
- * Check if a request should be rate limited
+ * Check if a request should be rate limited using sliding window approach
  * @param {string} identifier - Unique identifier for the client (IP address, API key, etc.)
  * @param {number} limit - Maximum number of requests allowed
  * @param {number} windowSec - Time window in seconds
@@ -37,34 +41,49 @@ const ttlAsync = promisify(client.ttl).bind(client);
  */
 const checkRateLimit = async (identifier, limit = 5, windowSec = 60) => {
   const key = `ratelimit:${identifier}`;
+  const now = Date.now();
+  const windowStart = now - (windowSec * 1000);
 
   try {
-    // Increment the counter
-    const current = await incrAsync(key);
+    // Add current timestamp to the sorted set
+    await zaddAsync(key, now, now.toString());
     
-    // Set the expiry if this is the first request in the window
-    if (current === 1) {
-      await expireAsync(key, windowSec);
-    }
+    // Set expiration on the key to ensure cleanup
+    await expireAsync(key, windowSec * 2);
     
-    // Get remaining TTL
-    const ttl = await ttlAsync(key);
+    // Remove timestamps outside the current window
+    await zremrangebyscoreAsync(key, 0, windowStart);
+    
+    // Get all timestamps in the current window
+    const timestamps = await zrangebyscoreAsync(key, windowStart, '+inf');
+    
+    // Count requests in the current window
+    const current = timestamps.length;
     
     // Calculate remaining requests
     const remaining = Math.max(0, limit - current);
+    
+    // Get key TTL
+    const ttl = await ttlAsync(key);
     
     // Determine if the request should be limited
     const isRateLimited = current > limit;
     
     if (isRateLimited) {
       logger.warn(`Rate limit exceeded for ${identifier}: ${current}/${limit} requests`);
+      metrics.rateLimit.inc({ identifier });
+      
+      // If we're over the limit, remove the current request to stay at the limit
+      if (current > limit) {
+        await zremrangebyrankAsync(key, 0, 0);
+      }
     }
     
     return {
       isRateLimited,
       limit,
       remaining,
-      reset: ttl,
+      reset: Math.ceil(windowSec - ((now - parseInt(timestamps[0] || now)) / 1000)),
       current
     };
   } catch (error) {
