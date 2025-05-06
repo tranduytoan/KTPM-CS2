@@ -12,6 +12,9 @@ const config = require('./config');
 const cacheService = require('./services/cacheService');
 const { getImageBufferFromPath } = require('./utils/imageUtils');
 const logger = require('./utils/logger');
+const rateLimitMiddleware = require('./middlewares/rateLimitMiddleware');
+const healthRoutes = require('./middlewares/healthMiddleware');
+const { httpRequestDurationMiddleware, metrics } = require('./utils/metrics');
 
 // Start consumers
 translateConsumer();
@@ -24,6 +27,18 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+// Add metrics middleware
+app.use(httpRequestDurationMiddleware);
+
+// Add rate limiting middleware
+app.use('/upload', rateLimitMiddleware({ 
+  limit: 5, 
+  windowSec: 60
+}));
+
+// Register health check endpoints
+healthRoutes(app);
 
 // Cấu hình upload
 const storage = multer.diskStorage({
@@ -60,6 +75,7 @@ app.get('/', (req, res) => {
 
 // API endpoint để xử lý upload file
 app.post('/upload', upload.single('image'), async (req, res) => {
+  const startTime = Date.now();
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Vui lòng upload một file hình ảnh' });
@@ -75,6 +91,9 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     
     if (cachedPdfPath && fs.existsSync(cachedPdfPath)) {
       logger.info('Using cached PDF result');
+      metrics.cacheHits.inc({ type: 'pdf' });
+      metrics.recordProcessingDuration('request_total', 'cache_hit', startTime);
+      
       // If PDF is in cache, send directly without Kafka processing
       return res.download(cachedPdfPath, 'translated_document.pdf', (err) => {
         if (err) {
@@ -88,6 +107,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       });
     } else if (cachedPdfPath && !fs.existsSync(cachedPdfPath)) {
       logger.info('Cached PDF path exists but file not found, reprocessing...');
+      metrics.cacheMisses.inc({ type: 'pdf' });
       await cacheService.removeFromCache(imageBuffer, 'pdf');
     }
     
@@ -96,6 +116,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
 
     if (cachedTranslatedText) {
       logger.info('Using cached OCR and translation results');
+      metrics.cacheHits.inc({ type: 'translatedText' });
       await produceMessage(config.topics.pdf, JSON.stringify({
         translatedText: cachedTranslatedText,
         imagePath: imagePath
@@ -103,7 +124,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     } else {
       // If not in cache, start from the beginning
       logger.info('No complete cache found, sending to OCR processing');
-      // await produceMessage(config.topics.ocr, imagePath, correlationId);
+      metrics.cacheMisses.inc({ type: 'translatedText' });
       await produceMessage(
         config.topics.ocr, 
         JSON.stringify({
@@ -120,12 +141,15 @@ app.post('/upload', upload.single('image'), async (req, res) => {
 
     const timeout = setTimeout(() => {
       resultEmitter.removeAllListeners(`pdfCreated-${correlationId}`); // tránh leak memory
+      metrics.recordProcessingDuration('request_total', 'timeout', startTime);
       res.status(504).json({ error: 'Xử lý ảnh mất quá nhiều thời gian' });
     }, TIMEOUT);
 
     resultEmitter.once(`pdfCreated-${correlationId}`, ({ pdfPath, key }) => {
       if (key === correlationId) {
         clearTimeout(timeout);
+        metrics.recordProcessingDuration('request_total', 'success', startTime);
+        
         res.download(pdfPath, 'translated_document.pdf', (err) => {
           if (err) {
             logger.error('Lỗi khi tải file PDF:', err);
@@ -143,9 +167,16 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       }
     });
   } catch (error) {
+    metrics.recordProcessingDuration('request_total', 'error', startTime);
     logger.error('Lỗi xử lý:', error);
     res.status(500).json({ error: 'Lỗi khi xử lý file ảnh' });
   }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  logger.error(`Unhandled error: ${err.message}`);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

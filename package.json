@@ -21,6 +21,7 @@
         "open-google-translator": "^1.0.5",
         "p-limit": "^3.1.0",
         "pdfkit": "^0.15.0",
+        "prom-client": "^14.2.0",
         "redis": "^3.1.2",
         "sharp": "^0.34.1",
         "uuid": "^11.1.0"

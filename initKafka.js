@@ -5,8 +5,8 @@ const config = require('./config');
 // Số lượng partition cố định cho mỗi topic
 const FIXED_PARTITIONS = {
   ocr: 8,
-  translate: 4,
-  pdf: 2
+  translate: 1,
+  pdf: 1
 };
 
 async function initializeTopics() {
