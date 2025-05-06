@@ -4,109 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chuyển đổi ảnh sang PDF tiếng Việt</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-            color: #333;
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .container {
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        .file-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #fff;
-        }
-        .btn {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 4px;
-            display: block;
-            margin: 0 auto;
-            transition: background-color 0.3s;
-        }
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        .preview {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .preview img {
-            max-width: 100%;
-            max-height: 400px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .loading p {
-            margin-top: 10px;
-            font-style: italic;
-        }
-        .result-container {
-            display: none;
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #e8f4fc;
-            border-radius: 5px;
-            text-align: center;
-        }
-        .result-message {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-        .download-btn {
-            background-color: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .download-btn:hover {
-            background-color: #219955;
-        }
-        .pdf-preview {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 400px;
-            width: 100%;
-            display: none;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -120,8 +18,18 @@
             
             <div class="preview" id="imagePreview"></div>
             
-            <button type="submit" class="btn">Chuyển đổi sang PDF</button>
+            <button type="submit" class="btn" id="submitBtn">Chuyển đổi sang PDF</button>
         </form>
+        
+        <div class="error-container" id="errorContainer">
+            <h3 class="error-title">Đã xảy ra lỗi</h3>
+            <p class="error-message" id="errorMessage"></p>
+            <div class="rate-limit-info" id="rateLimitInfo" style="display: none;">
+                <p>Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau <span class="countdown" id="countdown">0</span> giây.</p>
+                <p>Giới hạn: <span id="rateLimit">0</span> yêu cầu trong <span id="rateLimitWindow">0</span> giây.</p>
+                <p>Còn lại: <span id="rateLimitRemaining">0</span> yêu cầu.</p>
+            </div>
+        </div>
         
         <div class="loading" id="loadingIndicator">
             <div>Đang xử lý...</div>
@@ -133,105 +41,7 @@
             <button class="download-btn" id="downloadBtn">Tải xuống PDF</button>
             <div class="pdf-preview" id="pdfPreview"></div>
         </div>
-    </div>    <script>
-        document.getElementById('image').addEventListener('change', function(e) {
-            const preview = document.getElementById('imagePreview');
-            preview.innerHTML = '';
-            
-            if (e.target.files && e.target.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(event) {
-                    const img = document.createElement('img');
-                    img.src = event.target.result;
-                    preview.appendChild(img);
-                }
-                
-                reader.readAsDataURL(e.target.files[0]);
-            }
-        });
-
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            loadingIndicator.style.display = 'block';
-            
-            const formData = new FormData(this);
-            
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.blob();
-                }
-                throw new Error('Lỗi khi xử lý file');
-            })            .then(blob => {
-                // Tạo URL cho blob
-                const url = window.URL.createObjectURL(blob);
-                
-                // Lưu trữ URL và blob để tải xuống sau
-                window.pdfUrl = url;
-                window.pdfBlob = blob;
-                
-                // Ẩn loading và hiển thị kết quả
-                loadingIndicator.style.display = 'none';
-                const resultContainer = document.getElementById('resultContainer');
-                resultContainer.style.display = 'block';
-                
-                // Thêm iframe để hiển thị preview PDF nếu trình duyệt hỗ trợ
-                const pdfPreview = document.getElementById('pdfPreview');
-                
-                try {
-                    // Thử tạo preview PDF
-                    pdfPreview.style.display = 'block';
-                    
-                    // Có 2 cách để hiển thị PDF: iframe hoặc object
-                    const previewElement = document.createElement('iframe');
-                    previewElement.src = url;
-                    previewElement.style.width = '100%';
-                    previewElement.style.height = '500px';
-                    previewElement.style.border = 'none';
-                    
-                    pdfPreview.innerHTML = '';
-                    pdfPreview.appendChild(previewElement);
-                } catch (e) {
-                    console.log('Không thể hiển thị preview PDF:', e);
-                    pdfPreview.style.display = 'none';
-                }
-            })            .catch(error => {
-                console.error('Lỗi:', error);
-                loadingIndicator.style.display = 'none';
-                alert('Đã xảy ra lỗi khi xử lý file ảnh.');
-            });
-        });
-        
-        // Xử lý sự kiện nút tải xuống
-        document.getElementById('downloadBtn').addEventListener('click', function() {
-            if (window.pdfUrl && window.pdfBlob) {
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = window.pdfUrl;
-                a.download = 'translated_document.pdf';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }
-        });
-        
-        // Thêm nút làm mới để bắt đầu chuyển đổi mới
-        document.getElementById('uploadForm').addEventListener('reset', function() {
-            document.getElementById('resultContainer').style.display = 'none';
-            document.getElementById('imagePreview').innerHTML = '';
-            
-            // Giải phóng URL khi làm mới
-            if (window.pdfUrl) {
-                window.URL.revokeObjectURL(window.pdfUrl);
-                window.pdfUrl = null;
-                window.pdfBlob = null;
-            }
-        });
-    </script>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,132 @@
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  line-height: 1.6;
+  color: #333;
+}
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 30px;
+}
+.container {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.form-group {
+  margin-bottom: 20px;
+}
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.file-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+}
+.btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+  display: block;
+  margin: 0 auto;
+  transition: background-color 0.3s;
+}
+.btn:hover {
+  background-color: #2980b9;
+}
+.btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+.preview {
+  margin-top: 20px;
+  text-align: center;
+}
+.preview img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.loading {
+  display: none;
+  text-align: center;
+  margin-top: 20px;
+}
+.loading p {
+  margin-top: 10px;
+  font-style: italic;
+}
+.result-container {
+  display: none;
+  margin-top: 30px;
+  padding: 15px;
+  background-color: #e8f4fc;
+  border-radius: 5px;
+  text-align: center;
+}
+.result-message {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+.download-btn {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+.download-btn:hover {
+  background-color: #219955;
+}
+.pdf-preview {
+  margin-top: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 400px;
+  width: 100%;
+  display: none;
+}
+.error-container {
+  display: none;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #ffeaea;
+  border-left: 4px solid #e74c3c;
+  border-radius: 4px;
+}
+.error-title {
+  color: #c0392b;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+}
+.error-message {
+  margin: 0;
+}
+.rate-limit-info {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f7f9fa;
+  border-radius: 4px;
+}
+.countdown {
+  font-weight: bold;
+  color: #e74c3c;
+}
